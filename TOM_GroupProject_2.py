@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-n = 3*pow(10,3)       # number of agents (has to be divisible by 3 bc we have 3 groups)
+n = 3*pow(10,4)       # number of agents (has to be divisible by 3 bc we have 3 groups)
 t = 50                # number of periods
 init_w = 1            # the initial wealth of firms (same for all)
 
@@ -34,10 +34,8 @@ for j in range(1, t):
                 w[i,j] = w[i,j-1] + np.random.normal(0, var_mid)
             else:
                 w[i,j] = w[i,j-1] + np.random.normal(0, var_high)
-        else:
-            continue
     
-    current_round = w[:,j]
+    current_round = np.copy(w[:,j])
     current_round[current_round == 0] = pow(10,10)
     current_ranking = np.argsort(current_round)
     for k in range(int(death_zone*n)):
@@ -45,9 +43,8 @@ for j in range(1, t):
         strike_counter[index,j] = strike_counter[index,j-1] + 1
         if strike_counter[index,j] == max_strikes:
             w[index,j] = 0
-    
-    
 
+# Putting firms into respective groups
 group_low = w[0]
 group_mid = w[1]
 group_high = w[2]
@@ -59,14 +56,25 @@ for i in range(4, len(w), 3):
 for i in range(5, len(w), 3):
     group_high = np.vstack((group_high, w[i]))
 
+# Calculate mean wealth - Plot 1
 mean_low = np.mean(group_low, axis=0)
 mean_mid = np.mean(group_mid, axis=0)
 mean_high = np.mean(group_high, axis=0)
 
 result_matrix = np.vstack((mean_low, mean_mid, mean_high))
 
+#Calculate dead firms for every round - Plot 2
+death_low = len(group_low) - np.count_nonzero(group_low, axis=0)
+death_mid = len(group_mid) - np.count_nonzero(group_mid, axis=0)
+death_high = len(group_high) - np.count_nonzero(group_high, axis=0)
 
-# Plot of random walk of the "average firm" per group
+
+####################
+# Plots
+####################
+
+
+# Plot 1: plot of random walk of the "average firm" per group
 
 plot_matrix = np.matrix.transpose(result_matrix)
 
@@ -75,32 +83,24 @@ for i in range(3):
     plt.plot(plot_matrix[:,i], label="Firm #{}".format(i+1))
 plt.xlabel("Period number")
 plt.ylabel("Wealth")
-plt.title("Random walk of average firm for every group")
+plt.title("Model 2 - Random walk of average firm for every group")
 plt.legend(loc=4,prop={'size':10})
 plt.show()
 
 
-# Plot of the number of firms that died per group
+# Plot 2: plot of the number of firms that died per group
 
 plt.figure(dpi=150)
 
-death_low = len(group_low) - np.count_nonzero(group_low, axis=0)
 plt.plot(death_low, label="Firm #{}".format(1))
-
-death_mid = len(group_mid) - np.count_nonzero(group_mid, axis=0)
 plt.plot(death_mid, label="Firm #{}".format(2))
-
-death_high = len(group_high) - np.count_nonzero(group_high, axis=0)
 plt.plot(death_high, label="Firm #{}".format(3))
 
 plt.xlabel("Period number")
 plt.ylabel("Number of deaths")
-plt.title("Deaths over time from a total of {} firms per group".format(int(n/3)))
+plt.title("Model 2 - Deaths over time from a total of {} firms per group".format(int(n/3)))
 plt.legend(loc=4,prop={'size':10})
 plt.show()
-
-
-
 
 
 

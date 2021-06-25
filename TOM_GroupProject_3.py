@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 24 11:19:01 2021
+Created on Thu Jun 24 13:55:33 2021
 
 @author: Robert Janjic
 """
@@ -15,7 +15,11 @@ init_w = 1            # the initial wealth of firms (same for all)
 
 var_low = 0.1       # variance of normal distribution for every group
 var_mid = 0.3
-var_high = 0.5
+var_high = 0.7
+
+death_zone = 0.05     # this will be the percentage of firms on the lower end of the size distribution (in every round) that will receive a strike
+max_strikes = 2       # after collecting this many strikes in a row, a firm dies
+strike_counter = np.zeros((n, t))
 
 death_thresh = 0    # when wealth reaches this level, the firm dies
 
@@ -23,21 +27,28 @@ w = np.zeros((n, t))
 w[:,0] = init_w
 
 
-for i in range(n):
-    for j in range(1, t):
-        if w[i,j-1] <= death_thresh:
-            continue
-        else:
+for j in range(1, t):
+    for i in range(n):
+        if w[i,j-1] > death_thresh:
             if i%3 == 0:
                 w[i,j] = w[i,j-1] + np.random.normal(0, var_low)
             elif i%3 == 1:
                 w[i,j] = w[i,j-1] + np.random.normal(0, var_mid)
             else:
                 w[i,j] = w[i,j-1] + np.random.normal(0, var_high)
-            
-            if w[i,j] <= death_thresh:
-                w[i,j] = death_thresh
-
+        
+        if w[i,j] <= death_thresh:
+            w[i,j] = death_thresh
+    
+    current_round = np.copy(w[:,j])
+    current_round[current_round == 0] = pow(10,10)
+    current_ranking = np.argsort(current_round)
+    for k in range(int(death_zone*n)):
+        index = current_ranking[k]
+        strike_counter[index,j] = strike_counter[index,j-1] + 1
+        if strike_counter[index,j] == max_strikes:
+            w[index,j] = 0
+    
 # Putting firms into respective groups
 group_low = w[0]
 group_mid = w[1]
@@ -67,6 +78,7 @@ death_high = len(group_high) - np.count_nonzero(group_high, axis=0)
 # Plots
 ####################
 
+
 # Plot 1: plot of random walk of the "average firm" per group
 
 plot_matrix = np.matrix.transpose(result_matrix)
@@ -76,7 +88,7 @@ for i in range(3):
     plt.plot(plot_matrix[:,i], label="Firm #{}".format(i+1))
 plt.xlabel("Period number")
 plt.ylabel("Wealth")
-plt.title("Model 1 - Random walk of average firm for every group")
+plt.title("Model 3 - Random walk of average firm for every group")
 plt.legend(loc=4,prop={'size':10})
 plt.show()
 
@@ -91,7 +103,7 @@ plt.plot(death_high, label="Firm #{}".format(3))
 
 plt.xlabel("Period number")
 plt.ylabel("Number of deaths")
-plt.title("Model 1 - Deaths over time from a total of {} firms per group".format(int(n/3)))
+plt.title("Model 3 - Deaths over time from a total of {} firms per group".format(int(n/3)))
 plt.legend(loc=4,prop={'size':10})
 plt.show()
 
